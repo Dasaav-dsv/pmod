@@ -1,0 +1,28 @@
+[package]
+name = "pmod"
+version = "0.1.0"
+edition = "2021"
+authors = ["Dasaav"]
+description = "FromSoftware static data runtime manipulation library"
+readme = "README.md"
+repository = "https://github.com/Dasaav-dsv/pmod"
+license = "MIT OR Apache-2.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+cxx-stl = { version = "0.1", git = "https://github.com/Dasaav-dsv/STL-rs.git" }
+encoding_rs = "0.8"
+
+[dependencies.windows]
+version = "0.61"
+features = [
+    "Win32_Security",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Memory",
+    "Win32_System_Threading",
+]
+
+[profile.release]
+lto = "fat"

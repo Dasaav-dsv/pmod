@@ -9,7 +9,7 @@ repository = "https://github.com/Dasaav-dsv/pmod"
 license = "MIT OR Apache-2.0"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["lib", "cdylib"]
 
 [dependencies]
 cxx-stl = { version = "0.1", git = "https://github.com/Dasaav-dsv/STL-rs.git" }

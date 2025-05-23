@@ -49,7 +49,7 @@ where
     pub name: DLHashString,
     pub owner: Option<NonNull<ResCapHolder<T>>>,
     pub next: Option<NonNull<T>>,
-    pub refcount: usize,
+    pub refcount: u32,
 }
 
 impl<T> ResCapHolder<T>

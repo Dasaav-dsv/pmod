@@ -29,4 +29,5 @@ features = [
 ds3 = ["cxx-stl/msvc2012"]
 sekiro = []
 elden-ring = []
+ac6 = ["elden-ring"]
 default = ["elden-ring"]

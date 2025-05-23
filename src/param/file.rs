@@ -15,11 +15,11 @@ use std::{
 
 use crate::stdalloc::DLStdAllocator;
 
-#[cfg(any(not(feature = "ds3"), feature = "sekiro", feature = "elden-ring"))]
+#[cfg(any(all(not(feature = "ds3"), not(feature = "sekiro")), feature = "elden-ring"))]
 const MAX_ROW_COUNT: usize =
     (i32::MAX as usize - mem::size_of::<FileHeader>()) / mem::size_of::<RowDescriptor24>();
 
-#[cfg(all(feature = "ds3", not(feature = "sekiro"), not(feature = "elden-ring")))]
+#[cfg(all(any(feature = "ds3", feature = "sekiro"), not(feature = "elden-ring")))]
 const MAX_ROW_COUNT: usize = u16::MAX as usize - 1;
 
 /// The header of a param file, which contains the param table.
@@ -126,12 +126,12 @@ impl FileHeader {
     #[inline]
     pub fn row_count(&self) -> Result<usize> {
         // SAFETY: alignment of `Self` is greater than that of `i32`
-        #[cfg(any(not(feature = "ds3"), feature = "sekiro", feature = "elden-ring"))]
+        #[cfg(any(all(not(feature = "ds3"), not(feature = "sekiro")), feature = "elden-ring"))]
         unsafe {
             usize::try_from(*(self.file_base().byte_sub(12) as *const i32))
                 .map_err(|_| Error::Malformed)
         }
-        #[cfg(all(feature = "ds3", not(feature = "sekiro"), not(feature = "elden-ring")))]
+        #[cfg(all(any(feature = "ds3", feature = "sekiro"), not(feature = "elden-ring")))]
         Ok(self.row_count as usize)
     }
 

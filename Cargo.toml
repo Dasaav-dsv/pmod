@@ -1,6 +1,6 @@
 [package]
 name = "pmod"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Dasaav"]
 description = "FromSoftware static data runtime manipulation library"
@@ -13,6 +13,7 @@ crate-type = ["lib", "cdylib"]
 
 [dependencies]
 cxx-stl = { version = "0.1", git = "https://github.com/Dasaav-dsv/STL-rs.git" }
+from-singleton = "0"
 encoding_rs = "0.8"
 
 [dependencies.windows]

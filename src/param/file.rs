@@ -319,15 +319,17 @@ impl FileHeader {
     /// Clone and reallocate a file, removing duplicate rows and fixing anomalies.
     /// 
     /// # Errors:
-    /// - [`Error::FailedRealloc`] if the allocator returned null.
+    /// - [`Error::FailedRealloc`] if the allocator returned null or if the file
+    /// is too big to be reallocated.
     pub fn clone_reallocate(&self, grow: bool) -> Result<(&'static mut Self, usize)> {
         // Account for `u32::MAX` special entry
         let has_extra = self.lut().last().is_some_and(|e| e.id == u32::MAX);
 
-        let old_len = Ord::min(
-            self.row_count().unwrap_or(0) - has_extra as usize,
-            MAX_ROW_COUNT,
-        );
+        let old_len = self.row_count().unwrap_or(0) - has_extra as usize;
+
+        if old_len > MAX_ROW_COUNT {
+            return Err(Error::FailedRealloc);
+        }
 
         let new_len = {
             let mut len = old_len;
@@ -336,7 +338,7 @@ impl FileHeader {
                 len = Ord::max(len * 2, 32)
             }
 
-            Ord::clamp(old_len, len, MAX_ROW_COUNT)
+            Ord::min(len, MAX_ROW_COUNT)
         };
 
         let new_size = mem::size_of::<Self>() + new_len * mem::size_of::<RowDescriptor24>();

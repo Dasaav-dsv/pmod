@@ -1,5 +1,5 @@
 //! FD4 resource abstractions.
-//! 
+//!
 //! Credits to vswarte and eldenring-rs for some of the layouts
 
 use std::{ptr::NonNull, slice};
@@ -12,9 +12,13 @@ where
     T: AsRef<ResCapHolderItem<T>>,
 {
     pub item: ResCapHolderItem<T>,
+    #[cfg(feature = "elden-ring")]
     is_debug: bool,
+    #[cfg(any(feature = "elden-ring", feature = "sekiro"))]
     _unk61: bool,
+    #[cfg(feature = "elden-ring")]
     debug_item: usize,
+    #[cfg(feature = "elden-ring")]
     _unk70: bool,
 }
 

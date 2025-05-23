@@ -37,8 +37,8 @@ dependencies = [
 
 [[package]]
 name = "cxx-stl"
-version = "0.1.0"
-source = "git+https://github.com/Dasaav-dsv/STL-rs.git#514e48fadf3e9f1ec29c3fb530181705b83fd435"
+version = "0.2.0"
+source = "git+https://github.com/Dasaav-dsv/STL-rs.git#a4fc8716596cd86b593e639878b7e327af32745d"
 dependencies = [
  "cstl-sys",
 ]

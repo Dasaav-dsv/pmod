@@ -484,7 +484,7 @@ impl FileHeader {
             &mut *(new_file_base as *mut FileHeader)
         };
 
-        new_file.row_count = Ord::min(new_len, u16::MAX as usize) as u16;
+        new_file.row_count = Ord::min(new_len, u16::MAX as i32) as u16;
 
         match new_file.lut_mut().last_mut() {
             Some(last) if last.id == u32::MAX => {

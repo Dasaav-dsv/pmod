@@ -7,10 +7,10 @@
 use std::{fmt, num::NonZeroU32, ptr::NonNull, slice, sync::LazyLock};
 
 use file::FileHeader;
+use from_singleton::FromSingleton;
 use windows::core::w;
 
 use crate::{
-    image_base,
     static_lock::{StaticLock, StaticPtr},
     stdalloc::DLStdAllocator,
 };
@@ -164,12 +164,10 @@ impl fmt::Debug for FileHolder<'_> {
     }
 }
 
+impl FromSingleton for MsgRepository {}
+
 impl StaticPtr for MsgRepository {
     const STATIC_ID: windows::core::PCWSTR = w!("PMOD_MSG_REPOSITORY");
-
-    fn static_ptr() -> NonNull<*mut Self> {
-        unsafe { image_base().byte_add(0x3d7d4f8).cast() }
-    }
 }
 
 unsafe impl Send for MsgRepository {}

@@ -1,43 +1,43 @@
 use std::{
+    marker::PhantomData,
     mem,
     ops::{Deref, DerefMut},
     ptr::NonNull,
 };
 
+use from_singleton::FromSingleton;
 use windows::{
+    core::PCWSTR,
     Win32::{
         Foundation::{GetLastError, INVALID_HANDLE_VALUE},
         System::{
-            Memory::{CreateFileMappingW, FILE_MAP_ALL_ACCESS, MapViewOfFile, PAGE_READWRITE},
+            Memory::{CreateFileMappingW, MapViewOfFile, FILE_MAP_ALL_ACCESS, PAGE_READWRITE},
             Threading::{
                 AcquireSRWLockExclusive, AcquireSRWLockShared, ReleaseSRWLockExclusive,
                 ReleaseSRWLockShared, SRWLOCK,
             },
         },
     },
-    core::PCWSTR,
 };
 
-pub struct StaticLock<T: ?Sized + StaticPtr> {
+pub struct StaticLock<T: StaticPtr> {
     lock: NonNull<SRWLOCK>,
-    ptr: NonNull<*mut T>,
+    _marker: PhantomData<T>,
 }
 
-pub struct StaticLockReadGuard<'a, T: ?Sized> {
+pub struct StaticLockReadGuard<'a, T> {
     value: &'a T,
     lock: NonNull<SRWLOCK>,
 }
 
-pub struct StaticLockWriteGuard<'a, T: ?Sized> {
+pub struct StaticLockWriteGuard<'a, T> {
     value: &'a mut T,
     lock: NonNull<SRWLOCK>,
 }
 
-impl<T: ?Sized + StaticPtr> StaticLock<T> {
+impl<T: StaticPtr + FromSingleton> StaticLock<T> {
     pub fn new() -> Self {
         const RWLOCK_SIZE: usize = mem::size_of::<SRWLOCK>();
-
-        let ptr = T::static_ptr();
 
         unsafe {
             // Starts zero-initialized, valid for SRWLOCK.
@@ -58,22 +58,29 @@ impl<T: ?Sized + StaticPtr> StaticLock<T> {
                 panic!("MapViewOfFile failed: {}", GetLastError().ok().unwrap_err());
             };
 
-            Self { lock, ptr }
+            Self {
+                lock,
+                _marker: PhantomData,
+            }
         }
     }
 
     pub fn read(&self) -> Option<StaticLockReadGuard<'_, T>> {
-        let ptr = NonNull::new(unsafe { self.ptr.read() })?;
-        Some(StaticLockReadGuard::new(self.lock, ptr))
+        Some(StaticLockReadGuard::new(
+            self.lock,
+            from_singleton::address_of::<T>()?,
+        ))
     }
 
     pub fn write(&self) -> Option<StaticLockWriteGuard<'_, T>> {
-        let ptr = NonNull::new(unsafe { self.ptr.read() })?;
-        Some(StaticLockWriteGuard::new(self.lock, ptr))
+        Some(StaticLockWriteGuard::new(
+            self.lock,
+            from_singleton::address_of::<T>()?,
+        ))
     }
 }
 
-impl<T: ?Sized> StaticLockReadGuard<'_, T> {
+impl<T> StaticLockReadGuard<'_, T> {
     fn new(lock: NonNull<SRWLOCK>, ptr: NonNull<T>) -> Self {
         unsafe {
             AcquireSRWLockShared(lock.as_ptr());
@@ -86,7 +93,7 @@ impl<T: ?Sized> StaticLockReadGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> StaticLockWriteGuard<'_, T> {
+impl<T> StaticLockWriteGuard<'_, T> {
     fn new(lock: NonNull<SRWLOCK>, mut ptr: NonNull<T>) -> Self {
         unsafe {
             AcquireSRWLockExclusive(lock.as_ptr());
@@ -101,11 +108,9 @@ impl<T: ?Sized> StaticLockWriteGuard<'_, T> {
 
 pub trait StaticPtr {
     const STATIC_ID: PCWSTR;
-
-    fn static_ptr() -> NonNull<*mut Self>;
 }
 
-impl<T: ?Sized> Deref for StaticLockReadGuard<'_, T> {
+impl<T> Deref for StaticLockReadGuard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -113,7 +118,7 @@ impl<T: ?Sized> Deref for StaticLockReadGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> Deref for StaticLockWriteGuard<'_, T> {
+impl<T> Deref for StaticLockWriteGuard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -121,13 +126,13 @@ impl<T: ?Sized> Deref for StaticLockWriteGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> DerefMut for StaticLockWriteGuard<'_, T> {
+impl<T> DerefMut for StaticLockWriteGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.value
     }
 }
 
-impl<T: ?Sized> Drop for StaticLockReadGuard<'_, T> {
+impl<T> Drop for StaticLockReadGuard<'_, T> {
     fn drop(&mut self) {
         unsafe {
             ReleaseSRWLockShared(self.lock.as_ptr());
@@ -135,7 +140,7 @@ impl<T: ?Sized> Drop for StaticLockReadGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> Drop for StaticLockWriteGuard<'_, T> {
+impl<T> Drop for StaticLockWriteGuard<'_, T> {
     fn drop(&mut self) {
         unsafe {
             ReleaseSRWLockExclusive(self.lock.as_ptr());
@@ -143,14 +148,14 @@ impl<T: ?Sized> Drop for StaticLockWriteGuard<'_, T> {
     }
 }
 
-unsafe impl<T: ?Sized + Send + StaticPtr> Send for StaticLock<T> {}
+unsafe impl<T: Send + StaticPtr> Send for StaticLock<T> {}
 
-unsafe impl<T: ?Sized + Send + Sync + StaticPtr> Sync for StaticLock<T> {}
+unsafe impl<T: Send + Sync + StaticPtr> Sync for StaticLock<T> {}
 
-unsafe impl<T: ?Sized + Send> Send for StaticLockReadGuard<'_, T> {}
+unsafe impl<T: Send> Send for StaticLockReadGuard<'_, T> {}
 
-unsafe impl<T: ?Sized + Send + Sync> Sync for StaticLockReadGuard<'_, T> {}
+unsafe impl<T: Send + Sync> Sync for StaticLockReadGuard<'_, T> {}
 
-unsafe impl<T: ?Sized + Send> Send for StaticLockWriteGuard<'_, T> {}
+unsafe impl<T: Send> Send for StaticLockWriteGuard<'_, T> {}
 
-unsafe impl<T: ?Sized + Send + Sync> Sync for StaticLockWriteGuard<'_, T> {}
+unsafe impl<T: Send + Sync> Sync for StaticLockWriteGuard<'_, T> {}

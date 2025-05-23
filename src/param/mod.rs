@@ -13,11 +13,11 @@
 use std::{borrow::Cow, error, fmt, ptr::NonNull, sync::LazyLock};
 
 use file::FileHeader;
+use from_singleton::FromSingleton;
 use windows::core::w;
 
 use crate::{
     hash::DLHash,
-    image_base,
     resource::{ResCap, ResCapHolderItem, ResRep},
     static_lock::{StaticLock, StaticPtr},
     stdalloc::DLStdAllocator,
@@ -264,12 +264,14 @@ impl fmt::Debug for ParamRepository {
     }
 }
 
+impl FromSingleton for ParamRepository {
+    fn name() -> Cow<'static, str> {
+        Cow::Borrowed("FD4ParamRepository")
+    }
+}
+
 impl StaticPtr for ParamRepository {
     const STATIC_ID: windows::core::PCWSTR = w!("PMOD_PARAM_REPOSITORY");
-
-    fn static_ptr() -> NonNull<*mut Self> {
-        unsafe { image_base().byte_add(0x485dea0).cast() }
-    }
 }
 
 impl fmt::Display for Error {

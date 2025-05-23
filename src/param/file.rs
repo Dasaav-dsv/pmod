@@ -1,8 +1,8 @@
 //! Raw param file introspection.
-//! 
+//!
 //! Param row manipulation uses a free list approach with
 //! amortized O(1) insertion and removal performance.
-//! 
+//!
 //! Original implementation idea by tremwil.
 
 use std::{
@@ -15,8 +15,12 @@ use std::{
 
 use crate::stdalloc::DLStdAllocator;
 
+#[cfg(any(not(feature = "ds3"), feature = "sekiro", feature = "elden-ring"))]
 const MAX_ROW_COUNT: usize =
     (i32::MAX as usize - mem::size_of::<FileHeader>()) / mem::size_of::<RowDescriptor24>();
+
+#[cfg(all(feature = "ds3", not(feature = "sekiro"), not(feature = "elden-ring")))]
+const MAX_ROW_COUNT: usize = u16::MAX as usize - 1;
 
 /// The header of a param file, which contains the param table.
 ///
@@ -122,10 +126,13 @@ impl FileHeader {
     #[inline]
     pub fn row_count(&self) -> Result<usize> {
         // SAFETY: alignment of `Self` is greater than that of `i32`
+        #[cfg(any(not(feature = "ds3"), feature = "sekiro", feature = "elden-ring"))]
         unsafe {
             usize::try_from(*(self.file_base().byte_sub(12) as *const i32))
                 .map_err(|_| Error::Malformed)
         }
+        #[cfg(all(feature = "ds3", not(feature = "sekiro"), not(feature = "elden-ring")))]
+        Ok(self.row_count as usize)
     }
 
     /// Searches for a row by its id with a binary search, returning a pointer to its data.
@@ -317,7 +324,7 @@ impl FileHeader {
     }
 
     /// Clone and reallocate a file, removing duplicate rows and fixing anomalies.
-    /// 
+    ///
     /// # Errors:
     /// - [`Error::FailedRealloc`] if the allocator returned null or if the file
     /// is too big to be reallocated.
@@ -359,8 +366,6 @@ impl FileHeader {
             new_file_base.byte_add(0x10)
         };
 
-        let new_row_count = Ord::min(new_len, u16::MAX as usize) as u16;
-
         // SAFETY: `new_file_base` is properly aligned and not null
         unsafe {
             // Layouts below 3 do not have the `data_offset` field
@@ -372,7 +377,6 @@ impl FileHeader {
                 };
 
                 *new_file_base.cast() = Self {
-                    row_count: new_row_count,
                     data_offset: usize::wrapping_sub(
                         old_file_base.wrapping_byte_add(data_offset) as _,
                         new_file_base as _,
@@ -381,7 +385,6 @@ impl FileHeader {
                 };
             } else {
                 *new_file_base.cast() = Self {
-                    row_count: new_row_count,
                     data_offset: usize::wrapping_sub(
                         old_file_base.wrapping_byte_add(self.data_offset as _) as _,
                         new_file_base as _,
@@ -472,12 +475,16 @@ impl FileHeader {
             inserted += 1;
         }
 
+        let new_len = inserted - not_inserted as i32 + 1;
+
         let new_file = unsafe {
             *new_file_base.byte_sub(16).cast() = new_size as i32;
-            *new_file_base.byte_sub(12).cast() = inserted - not_inserted as i32 + 1;
+            *new_file_base.byte_sub(12).cast() = new_len;
 
             &mut *(new_file_base as *mut FileHeader)
         };
+
+        new_file.row_count = Ord::min(new_len, u16::MAX as usize) as u16;
 
         match new_file.lut_mut().last_mut() {
             Some(last) if last.id == u32::MAX => {
@@ -529,7 +536,7 @@ impl FileHeader {
 
         if let Ok(offset) = usize::try_from(file_base.byte_sub(16).read_unaligned()) {
             let aligned_offset = offset.wrapping_add(15) & usize::wrapping_neg(16);
-            let len = file_base.byte_sub(12).read_unaligned().max(0) as usize;
+            let len = self.row_count().ok().unwrap_or(0);
 
             NonNull::slice_from_raw_parts(
                 unsafe { NonNull::new_unchecked(file_base.byte_add(aligned_offset) as _) },

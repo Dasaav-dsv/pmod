@@ -60,9 +60,9 @@ dependencies = [
 
 [[package]]
 name = "from-singleton"
-version = "1.1.1"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2e6457b2dc11e7084e1da69ce5bfac13cbd47c3d3c1cc44f93063bd7ff2d869"
+checksum = "86641e977a490a2685ca46c43e16508bde5735ce342c12821f3eb8ba4b4df1d5"
 dependencies = [
  "pelite",
  "regex",
@@ -100,7 +100,7 @@ checksum = "7a7cf3f8ecebb0f4895f4892a8be0a0dc81b498f9d56735cb769dc31bf00815b"
 
 [[package]]
 name = "pmod"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "cxx-stl",
  "encoding_rs",

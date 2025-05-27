@@ -194,10 +194,10 @@ extern "C" fn reallocate_aligned(
 }
 
 extern "C" fn free(_: NonNull<DLAllocator>, ptr: *mut u8) {
-    if !ptr.is_null() {
+    if let Some(ptr) = NonNull::new(ptr) {
         unsafe {
             if let Ok(heap) = GetProcessHeap() {
-                let _ = HeapFree(heap, HEAP_NONE, Some(ptr as _));
+                let _ = HeapFree(heap, HEAP_NONE, Some(block_base(ptr) as _));
             }
         }
     }

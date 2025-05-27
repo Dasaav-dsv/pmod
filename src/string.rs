@@ -20,7 +20,6 @@ use cxx_stl::string::{CxxNarrowString, CxxUtf8String, CxxUtf16String, CxxUtf32St
 
 use crate::{hash::DLHash, stdalloc::DLStdAllocator};
 
-
 /// Monomorphized `DLTX::DLBasicString` template using the provided encoding discriminator.
 /// 
 /// It can be read and written from existing structures, but not created.

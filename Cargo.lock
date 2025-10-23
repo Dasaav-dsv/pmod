@@ -28,17 +28,18 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "cstl-sys"
-version = "2.2.0"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "139e6275fef418b2eed88096d95961f81cf1653fb6524020e2db9d57d34b3efd"
+checksum = "93cb3efebcf02ee15186d55068b8394bf5df33331feabda4f2cdcf3573d7c659"
 dependencies = [
  "cc",
 ]
 
 [[package]]
 name = "cxx-stl"
-version = "3.0.0"
-source = "git+https://github.com/Dasaav-dsv/STL-rs.git#c8167ebd39fd7f7938fe6c983bc64eefab651683"
+version = "4.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e42cf6d86f92c165eaf2d4afa54382ec9b8d1cdef39f4265bc938cd055198f83"
 dependencies = [
  "cstl-sys",
 ]

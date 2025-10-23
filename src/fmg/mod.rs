@@ -104,7 +104,7 @@ impl MsgRepository {
 }
 
 impl FD4MessageManager {
-    fn by_version(&self, v: u32) -> Option<FileHolder> {
+    fn by_version(&self, v: u32) -> Option<FileHolder<'_>> {
         let versions =
             unsafe { slice::from_raw_parts_mut(self.inner.as_ptr(), self.version_count as _) };
 

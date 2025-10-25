@@ -77,6 +77,18 @@ impl MsgRepository {
         file.replace_msg_by_index(index, data)
     }
 
+    pub fn get_all_msgs(version: u32, category: u32) -> Option<Vec<(u32, NonNull<u16>)>> {
+        let repo = MSG_REPOSITORY.read()?;
+        let file = repo.file_by_category(version, category)?;
+        Some(file.all_msgs().collect())
+    }
+
+    pub fn get_all_categories(version: u32) -> Option<Vec<u32>> {
+        let repo = MSG_REPOSITORY.read()?;
+        let holder = repo.inner.by_version(version)?;
+        Some(holder.files().iter().enumerate().filter_map(|(i, o)| o.and(Some(i as u32))).collect())
+    }
+
     fn file_by_category(&self, version: u32, category: u32) -> Option<&FileHeader> {
         let holder = self.inner.by_version(version)?;
         let ptr = *holder.files().get(category as usize)?;

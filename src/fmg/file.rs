@@ -91,6 +91,28 @@ impl FileHeader {
         old_data
     }
 
+    pub fn all_msgs(&'_ self) -> impl Iterator<Item = (u32, NonNull<u16>)> + '_ {
+        self.msg_groups().iter().flat_map(move |group| {
+            let first_index = group.offset;
+            let count = group.last_id.saturating_sub(group.first_id) + 1;
+            (0..count).filter_map(move |i| {
+                let index = first_index + i;
+                let offsets = unsafe {
+                    slice::from_raw_parts(self.msg_offsets.as_ptr(), self.msg_count as _)
+                };
+                offsets
+                    .get(index as usize)
+                    .and_then(|&opt| opt)
+                    .and_then(|offset| {
+                        NonNull::new(
+                            self.file_base().wrapping_byte_add(offset.get() as _) as *mut u16
+                        )
+                        .map(|data| (group.first_id + i, data))
+                    })
+            })
+        })
+    }
+
     fn file_base(&self) -> *mut u8 {
         self as *const _ as _
     }

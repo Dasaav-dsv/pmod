@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 
+#[cfg(feature = "exports")]
 pub mod exports;
 
 pub mod fmg;
